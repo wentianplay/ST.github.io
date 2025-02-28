@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>做梦变成正太模拟器</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f0f8ff;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        #game-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .status-bar {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .status-item {
+            background: #e6f3ff;
+            padding: 10px;
+            border-radius: 8px;
+            min-width: 120px;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #66ccff;
+            transition: width 0.3s ease;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #66ccff;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #4db8ff;
+        }
+
+        #event-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .event-item {
+            margin: 5px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>✨ 做梦变成正太模拟器 ✨</h1>
+        <div class="status-bar">
+            <div class="status-item">
+                <div>体力值: <span id="stamina">100</span></div>
+                <div class="progress-bar">
+                    <div class="progress" id="stamina-bar" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div>正太化进度: <span id="progress">0</span>%</div>
+                <div class="progress-bar">
+                    <div class="progress" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="takeAction('sleep')">💤 睡觉</button>
+            <button onclick="takeAction('imagine')">🌈 想象</button>
+            <button onclick="takeAction('play')">🎮 玩游戏</button>
+            <button onclick="takeAction('drink')">🥛 喝牛奶</button>
+        </div>
+
+        <div id="event-log"></div>
+    </div>
+
+    <script>
+        let gameState = {
+            stamina: 100,
+            shotaProgress: 0,
+            days: 0
+        }
+
+        const events = [
+            { 
+                trigger: 'sleep',
+                messages: [
+                    "你蜷缩在软软的床上，梦见自己穿上了可爱的睡衣...",
+                    "在梦境中，你发现自己变小了...",
+                    "月光下，你的头发似乎变柔软了一些..."
+                ],
+                effect: { stamina: +30, progress: +5 }
+            },
+            {
+                trigger: 'imagine',
+                messages: [
+                    "你幻想着穿着宽松的卫衣和小短裤...",
+                    "脑海中浮现出自己用萌萌的声音说话的样子...",
+                    "你想象着自己抱着毛绒玩具入睡..."
+                ],
+                effect: { stamina: -15, progress: +8 }
+            },
+            {
+                trigger: 'play',
+                messages: [
+                    "和想象中的朋友玩捉迷藏，体力消耗但很开心！",
+                    "玩电子游戏时，发现自己反应速度变快了...",
+                    "搭积木时动作变得笨拙可爱..."
+                ],
+                effect: { stamina: -20, progress: +3 }
+            },
+            {
+                trigger: 'drink',
+                messages: [
+                    "咕嘟咕嘟喝下牛奶，嘴角沾上了白胡子...",
+                    "捧着大大的杯子喝奶的样子有点可爱...",
+                    "补充钙质有助于长高？但似乎反效果..."
+                ],
+                effect: { stamina: +10, progress: +2 }
+            }
+        ]
+
+        function updateDisplay() {
+            document.getElementById('stamina').textContent = gameState.stamina;
+            document.getElementById('stamina-bar').style.width = `${gameState.stamina}%`;
+            document.getElementById('progress').textContent = gameState.shotaProgress;
+            document.getElementById('progress-bar').style.width = `${gameState.shotaProgress}%`;
+            
+            // 当体力低于30%时闪烁提示
+            document.getElementById('stamina-bar').style.animation = 
+                gameState.stamina <= 30 ? 'pulse 1s infinite' : 'none';
+        }
+
+        function addEventMessage(message) {
+            const log = document.getElementById('event-log');
+            const newEvent = document.createElement('div');
+            newEvent.className = 'event-item';
+            newEvent.textContent = `第${++gameState.days}天: ${message}`;
+            
+            log.appendChild(newEvent);
+            // 保持日志数量不超过10条
+            while (log.children.length > 10) {
+                log.removeChild(log.firstChild);
+            }
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function getRandomEvent(actionType) {
+            const actionEvents = events.find(e => e.trigger === actionType);
+            return {
+                message: actionEvents.messages[Math.floor(Math.random() * actionEvents.messages.length)],
+                effect: actionEvents.effect
+            };
+        }
+
+        function checkGameEnd() {
+            if (gameState.shotaProgress >= 100) {
+                alert('🎉 恭喜！你完全变成了萌萌的正太！');
+                resetGame();
+                return true;
+            }
+            if (gameState.stamina <= 0) {
+                alert('😴 体力耗尽，变回普通人了...');
+                resetGame();
+                return true;
+            }
+            return false;
+        }
+
+        function resetGame() {
+            gameState = { stamina: 100, shotaProgress: 0, days: 0 };
+            document.getElementById('event-log').innerHTML = '';
+            updateDisplay();
+        }
+
+        function takeAction(actionType) {
+            if (checkGameEnd()) return;
+
+            const event = getRandomEvent(actionType);
+            gameState.stamina = Math.max(0, Math.min(100, 
+                gameState.stamina + event.effect.stamina));
+            gameState.shotaProgress = Math.max(0, Math.min(100,
+                gameState.shotaProgress + event.effect.progress));
+            
+            addEventMessage(event.message);
+            updateDisplay();
+            
+            // 随机触发特殊事件
+            if (Math.random() < 0.2) {
+                const specialEvents = [
+                    "遇到一只小猫，你的萌度增加了！",
+                    "不小心被当成小孩子摸头了！",
+                    "发现自己的衣服都变大了！"
+                ];
+                addEventMessage(specialEvents[Math.floor(Math.random() * specialEvents.length)]);
+                gameState.shotaProgress += 3;
+            }
+
+            checkGameEnd();
+        }
+
+        // 初始化游戏
+        updateDisplay();
+    </script>
+</body>
+</html>
